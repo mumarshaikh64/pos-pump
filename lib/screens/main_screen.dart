@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dashboard_screen.dart';
 import 'entries_screen.dart';
 import 'reports_screen.dart';
+import '../utils/backup_service.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -19,9 +20,31 @@ class _MainScreenState extends State<MainScreen> {
     ReportsScreen(),
   ];
 
+  Future<void> _handleBackup() async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Starting backup to Google Drive...')),
+    );
+    await BackupService().autoBackup();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Backup process completed.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Transport POS'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.cloud_upload_outlined),
+            tooltip: 'Backup to Google Drive',
+            onPressed: _handleBackup,
+          ),
+        ],
+      ),
       body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(

@@ -45,6 +45,10 @@ dependencies:
   sqflite_common_ffi: ^2.3.4+1
   sqlite3_flutter_libs: ^0.5.24
   window_manager: ^0.4.3
+  googleapis: ^15.0.0
+  connectivity_plus: ^7.0.0
+  http: ^1.6.0
+  googleapis_auth: ^2.0.0
 
 
 
