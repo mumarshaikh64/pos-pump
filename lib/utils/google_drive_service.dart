@@ -1,117 +1,161 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:googleapis/drive/v3.dart' as drive;
 import 'package:googleapis_auth/auth_io.dart';
 import 'package:path/path.dart' as p;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
 
 class GoogleDriveService {
   static final GoogleDriveService _instance = GoogleDriveService._internal();
   factory GoogleDriveService() => _instance;
   GoogleDriveService._internal();
 
-  // IMPORTANT: For one central account, we use a Service Account.
-  // The user should paste their service_account.json content here or load it from assets.
-  static const Map<String, dynamic> _credentials = {
-    "type": "service_account",
-    "project_id": "pos-system-489509",
-    "private_key_id": "f6a94a17a0814c4e4dad4ba1969865d74664f992",
-    "private_key":
-        "-----BEGIN PRIVATE KEY-----\nMIIEuwIBADANBgkqhkiG9w0BAQEFAASCBKUwggShAgEAAoIBAQDmdIa4CPsExehd\nyDjvyYBsKP48Mv8Xq+lzTZsyXreKlOmXs/ixBO+EL5Ufo3ZhUr4A4D1XVhSbskp+\nJ8ku7y/10aOCSQ2+TpiXntIxgnHIl9tCKAiTgHQRDujYgB28Tw2o0qxpWEl5e3iV\nD/OZt1QYkZ9GdXk+IEFjEjpUNw0HEZBO/CzmvHOhRRRE0F0820UBCp7uH3xKipTZ\n0O/607HkRphcXjTpxOBaW+CZC5b+8BpMeuYkF7UCw/rCROwqjt4yx+SaRKMLD1hq\nGFkjrmIPuw7UhwbSrL1JBZRkvql2FdWHn10zocUpcuwiR91ytumU5dPZgwG1cMaE\ntv7KL/J9AgMBAAECgf4EyXMffw1TnUBaLU0k4VQ+ufOZ1JzpnqoIGMBAW5a8tO/G\nwFC2hMXzBHfZ3wWxQ5brJ3yQBNWku74fBS+1D3vUZbx1pmsbf27xsW4/3NT2sc1p\n1L/yMvJwTXt4QIVqdQnStW276M3JVWhxblsbmTWgxvJGewzHc3yUR6Bm46I1YuIw\n188wkN6IqNIo2Fqy1T4xff5wns+Cxqyaj9Gq1VS7NMaNt8hxinRBO7oMseY6nVef\nXbfsultsBiYbtBGDwAbUG4KwnnWKscnWlbfUDbStciVLCRKTCTbPf6Uaup1Qdqb9\n2f2mYZjcLiWMadYAidSaZ2r/cbTfZlFWGEztXwKBgQD/7KCjQ/C6Y1NoMb15lj/2\nK/jLVzlRJWVwUhxHU+iGTbBU6bbDPirF+yLhZF9igP+ChLWyevXxClLpiFEDajLR\nGsMkmjTPcg2+ySXFk3XiUyQJ6eGg2zFi8yB6mgjsswQqAB260dlCvQU8IqA1dBn9\nGaVtBAm8eofF1q+NedzjLwKBgQDmhfiIs9iMw34P2AMT1j2yMhWf6+yDQG68UWMe\nl10JzJTDh3GkxQpM+0UIJri4+TNXygF7q7KMx4o6zbGhm5v7EjIjZoh31qd/3pOl\nb9m0e1Uc8G2VFEtl5AmrUvw2Jbte2gR9hHutCxRZIynjjy5XGJDZeg+kRgCdU/6s\nAvjKEwKBgFGbgPXO2lp1Bcm54rN8x9SV3PXqUGqhxCD27fGIviLlbw8En7TOhBEx\nrcO1n/znKZLTAqVxNC+ynRG+2CaAnMe1AvkO+zwTIHLv7U19Yh/TZzCKFdqXSr5E\nzNyLdcEUrIVAGDrUY7U2VQ8B85hX91mP7gI/QWOKpvTdKomwjFEdAoGBAJ5sLYxN\nBKJga08aJatJTecbsm7QJR9idXen+xV38nGcjhP+DiStYVHcUOm0Kri8UgOgCPrj\n2XYUX7PfzpaAqWaXb6uSeHDbLQucfB1yy8vUAn874CNW6iYg3GBITJotviIGdJWK\nKbCXb6l+l/gSW0dx04IR95Puo9d7dQbjl/TPAoGBAM0sR9yD7WP2w+PCB+jndAGE\nC+3HQJ5Es8PdbnWIMTf1HPvIv71hLo2YOOj9MC5lEk8uJCBlljCjrb24fixxh/NH\nQJPYHPdS1GvwWjZiyjF8atdx4ausilDZxQptZzzpuJt2pzig+bHeJEu44T/yx0QL\nxOWF9s1232iDgwV/VbMb\n-----END PRIVATE KEY-----\n",
-    "client_email": "pos-system@pos-system-489509.iam.gserviceaccount.com",
-    "client_id": "112769718686491131664",
-    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-    "token_uri": "https://oauth2.googleapis.com/token",
-    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-    "client_x509_cert_url":
-        "https://www.googleapis.com/robot/v1/metadata/x509/pos-system%40pos-system-489509.iam.gserviceaccount.com",
-    "universe_domain": "googleapis.com",
-  };
+  // --- CONFIGURATION ---
+  // Ensure these are correct from your Google Cloud Console (Desktop App type)
+  static const String _clientId =
+      "YOUR_CLIENT_ID";
+  static const String _clientSecret = "YOUR_CLIENT_SECRET";
 
+  // Scope: driveFile (Sirf wahi files jo is app ne banayi hain)
   static final _scopes = [drive.DriveApi.driveFileScope];
 
-  Future<AutoRefreshingAuthClient> _getAuthClient() async {
-    final accountCredentials = ServiceAccountCredentials.fromJson(_credentials);
-    return await clientViaServiceAccount(accountCredentials, _scopes);
-  }
+  AutoRefreshingAuthClient? _authClient;
 
-  Future<bool> uploadBackup(File file) async {
-    try {
-      final client = await _getAuthClient();
-      final driveApi = drive.DriveApi(client);
+  /// Private helper to get or refresh the client
+  Future<AutoRefreshingAuthClient?> _getAuthClient() async {
+    if (_authClient != null) return _authClient;
 
+    final prefs = await SharedPreferences.getInstance();
+    final savedCredentials = prefs.getString('drive_credentials');
+
+    if (savedCredentials != null && savedCredentials.isNotEmpty) {
       try {
-        final fileName = p.basename(file.path);
-        
-        // 1. Find the shared folder 'POS_Backups'
-        String? folderId;
-        // Search more broadly
-        final folderQuery = "name = 'POS_Backups' and trashed = false";
-        final folderSearchResult = await driveApi.files.list(q: folderQuery);
-        
-        print('Debug: Found ${folderSearchResult.files?.length ?? 0} items matching "POS_Backups"');
-        if (folderSearchResult.files != null) {
-          for (var f in folderSearchResult.files!) {
-            print('Debug: Found item: ${f.name} (ID: ${f.id}, Mime: ${f.mimeType})');
-          }
-        }
-        
-        if (folderSearchResult.files != null && folderSearchResult.files!.isNotEmpty) {
-          // Find the one that is a folder
-          final folder = folderSearchResult.files!.firstWhere(
-            (f) => f.mimeType == 'application/vnd.google-apps.folder',
-            orElse: () => folderSearchResult.files!.first,
-          );
-          folderId = folder.id;
-        } else {
-          print('CRITICAL: Folder "POS_Backups" not found!');
-          print('Please ensure:');
-          print('1. Folder name is exactly "POS_Backups"');
-          print('2. It is shared with: ${_credentials['client_email']}');
-          return false;
-        }
-
-        // 2. Search for existing file with the same name INSIDE that folder
-        final query = "name = '$fileName' and '$folderId' in parents and trashed = false";
-        final fileList = await driveApi.files.list(q: query);
-
-        final media = drive.Media(
-          file.openRead(),
-          file.lengthSync(),
-          contentType: 'application/octet-stream',
+        final clientId = ClientId(_clientId, _clientSecret);
+        final credentials = AccessCredentials.fromJson(
+          jsonDecode(savedCredentials),
         );
 
-        if (fileList.files != null && fileList.files!.isNotEmpty) {
-          // Update existing file
-          final existingFileId = fileList.files!.first.id!;
-          await driveApi.files.update(
-            drive.File(name: fileName),
-            existingFileId,
-            uploadMedia: media,
-          );
-          print('Backup updated in "POS_Backups" folder');
-        } else {
-          // Create new file inside the folder
-          final driveFile = drive.File();
-          driveFile.name = fileName;
-          driveFile.parents = [folderId!];
-          
-          await driveApi.files.create(
-            driveFile,
-            uploadMedia: media,
-          );
-          print('New backup created in "POS_Backups" folder');
-        }
+        // Auto-refreshing client create karein
+        final baseClient = http.Client();
+        _authClient = autoRefreshingClient(clientId, credentials, baseClient);
 
-        return true;
-      } finally {
-        client.close();
+        // Agar token refresh ho toh storage update karein
+        _authClient!.credentialUpdates.listen((newCredentials) {
+          prefs.setString(
+            'drive_credentials',
+            jsonEncode(newCredentials.toJson()),
+          );
+          print("Tokens refreshed and saved.");
+        });
+
+        print("Successfully loaded cached credentials.");
+        return _authClient;
+      } catch (e) {
+        print('Error loading saved credentials, clearing them: $e');
+        await prefs.remove('drive_credentials');
       }
+    }
+    return null;
+  }
+
+  /// Manually trigger Sign-In via Browser
+  Future<bool> signIn() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final clientId = ClientId(_clientId, _clientSecret);
+
+      // clientViaUserConsent automatically opens a local server to listen for the redirect
+      final client = await clientViaUserConsent(clientId, _scopes, (url) async {
+        print('Opening browser for Auth: $url');
+        final uri = Uri.parse(url);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        } else {
+          print('Could not launch $url. Please open manually.');
+        }
+      });
+
+      // Save credentials for future use
+      prefs.setString(
+        'drive_credentials',
+        jsonEncode(client.credentials.toJson()),
+      );
+      _authClient = client;
+
+      print('Sign-in successful!');
+      return true;
     } catch (e) {
-      print('Error uploading backup: $e');
+      print('Sign-in error: $e');
       return false;
     }
   }
 
-  // No longer needs manual signIn/signOut for the user
-  Future<bool> signIn() async => true;
-  Future<void> signOut() async {}
+  /// Logout/Clear Credentials
+  Future<void> signOut() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('drive_credentials');
+    _authClient?.close();
+    _authClient = null;
+    print('Signed out.');
+  }
+
+  /// Main Function: Upload or Update Backup
+  Future<bool> uploadBackup(File file) async {
+    try {
+      final client = await _getAuthClient();
+      if (client == null) {
+        print('No valid session. User must sign in first.');
+        return false;
+      }
+
+      final driveApi = drive.DriveApi(client);
+      final fileName = p.basename(file.path);
+
+      // 1. Check or Create "POS_Backups" Folder
+      String? folderId;
+      final folderQuery =
+          "name = 'POS_Backups' and mimeType = 'application/vnd.google-apps.folder' and trashed = false";
+      final folderSearchResult = await driveApi.files.list(q: folderQuery);
+
+      if (folderSearchResult.files != null &&
+          folderSearchResult.files!.isNotEmpty) {
+        folderId = folderSearchResult.files!.first.id;
+      } else {
+        print('Creating new folder: POS_Backups');
+        final newFolder = drive.File()
+          ..name = 'POS_Backups'
+          ..mimeType = 'application/vnd.google-apps.folder';
+        final createdFolder = await driveApi.files.create(newFolder);
+        folderId = createdFolder.id;
+      }
+
+      // 2. Check if file already exists inside that folder
+      final fileQuery =
+          "name = '$fileName' and '$folderId' in parents and trashed = false";
+      final existingFiles = await driveApi.files.list(q: fileQuery);
+
+      final media = drive.Media(file.openRead(), file.lengthSync());
+
+      if (existingFiles.files != null && existingFiles.files!.isNotEmpty) {
+        // UPDATE existing file
+        final fileId = existingFiles.files!.first.id!;
+        await driveApi.files.update(drive.File(), fileId, uploadMedia: media);
+        print('Backup updated successfully.');
+      } else {
+        // CREATE new file
+        final driveFile = drive.File()
+          ..name = fileName
+          ..parents = [folderId!];
+        await driveApi.files.create(driveFile, uploadMedia: media);
+        print('New backup created successfully.');
+      }
+
+      return true;
+    } catch (e) {
+      print('Backup Upload Failed: $e');
+      return false;
+    }
+  }
 }

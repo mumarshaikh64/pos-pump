@@ -4,8 +4,8 @@ import '../providers/entry_provider.dart';
 import '../models/entry_model.dart';
 import 'package:intl/intl.dart';
 import 'entry_detail_screen.dart';
-import 'add_entry_screen.dart';
 import '../utils/pdf_exporter.dart';
+import 'batch_add_entries_screen.dart';
 
 class EntriesScreen extends StatefulWidget {
   const EntriesScreen({super.key});
@@ -186,13 +186,13 @@ class _EntriesScreenState extends State<EntriesScreen> {
           onPressed: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const AddEntryScreen()),
+              MaterialPageRoute(builder: (_) => const BatchAddEntriesScreen()),
             );
           },
           backgroundColor: Colors.blueAccent,
           icon: const Icon(Icons.add, color: Colors.white),
           label: const Text(
-            'Add Entry',
+            'Add Entry (Sheet)',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
           elevation: 4,

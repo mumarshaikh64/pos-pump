@@ -4,6 +4,8 @@ import '../providers/entry_provider.dart';
 import 'package:intl/intl.dart';
 import 'add_entry_screen.dart';
 import 'entry_detail_screen.dart';
+import '../utils/backup_service.dart';
+import '../utils/google_drive_service.dart';
 
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({super.key});
@@ -18,6 +20,35 @@ class DashboardScreen extends StatelessWidget {
         shadowColor: Colors.black.withOpacity(0.1),
         title: const Text('Dashboard'),
         centerTitle: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.account_circle, color: Colors.blueAccent),
+            tooltip: 'Sign In to Google Drive',
+            onPressed: () async {
+              final success = await GoogleDriveService().signIn();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(success ? 'Successfully connected to Google Drive!' : 'Failed to connect Google Drive.')),
+                );
+              }
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.cloud_upload_outlined, color: Colors.black87),
+            tooltip: 'Backup to Google Drive',
+            onPressed: () async {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Starting backup to Google Drive...')),
+              );
+              await BackupService().autoBackup();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Backup process completed.')),
+                );
+              }
+            },
+          ),
+        ],
       ),
       body: Consumer<EntryProvider>(
         builder: (context, provider, child) {
