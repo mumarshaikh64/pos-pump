@@ -33,7 +33,7 @@ class PdfExporter {
               ),
               pw.SizedBox(height: 20),
               pw.Text(
-                "Type: ${entry.type == 1 ? 'Trip Entry' : 'Load Report'}",
+                "Type: ${entry.type == 1 ? 'Trip Entry' : entry.type == 2 ? 'Load Report' : 'Material Supply'}",
                 style: pw.TextStyle(
                   fontSize: 18,
                   fontWeight: pw.FontWeight.bold,
@@ -42,6 +42,10 @@ class PdfExporter {
               pw.SizedBox(height: 10),
               _buildRow("Vehicle Number", entry.vehicleNumber),
               _buildRow("Date", _dateFormat.format(entry.date)),
+              if (entry.type == 3) ...[
+                _buildRow("Slip Number", entry.slipNumber ?? "-"),
+                _buildRow("Material", entry.material ?? "-"),
+              ],
               _buildRow("Details", entry.details),
               pw.SizedBox(height: 20),
               pw.Text(
@@ -75,12 +79,15 @@ class PdfExporter {
                 ),
               ),
               pw.Divider(),
-              if (entry.type == 2) ...[
+              if (entry.type != 1) ...[
                 _buildRow(
-                  "Rate Per Ton",
+                  entry.type == 3 ? "Rate" : "Rate Per Ton",
                   _currencyFormat.format(entry.ratePerTon ?? 0),
                 ),
-                _buildRow("Total Ton / CFT", "${entry.totalTon ?? 0}"),
+                _buildRow(
+                  entry.type == 3 ? "Total CFT / TON" : "Total Ton / CFT",
+                  "${entry.totalTon ?? 0}",
+                ),
               ],
               _buildRow(
                 entry.type == 1 ? "Trip Earnings" : "Total Earnings",
@@ -159,11 +166,12 @@ class PdfExporter {
         tableHeaders.add('Date');
         tableHeaders.add('Vehicle #');
         if (showTypeCol) tableHeaders.add('Type');
-        tableHeaders.add('Details');
+        if (firstType != 3 || !isSingleType) tableHeaders.add('Details');
 
         // Column optimization: if all are the same type, we can show specific columns like "Diesel"
         final isType1 = isSingleType && firstType == 1;
         final isType2 = isSingleType && firstType == 2;
+        final isType3 = isSingleType && firstType == 3;
 
         if (isType1) {
           tableHeaders.addAll([
@@ -183,6 +191,14 @@ class PdfExporter {
             'Earnings',
             'Profit',
           ]);
+        } else if (isType3) {
+          tableHeaders.addAll([
+            'Slip No',
+            'Material',
+            'Rate',
+            'CFT/TON',
+            'Amount',
+          ]);
         } else {
           // Mixed types or forced unified: Show generic financial columns
           tableHeaders.addAll(['Earnings', 'Expenses', 'Profit']);
@@ -196,8 +212,12 @@ class PdfExporter {
           final row = <String>[];
           row.add(_dateFormat.format(e.date));
           row.add(e.vehicleNumber);
-          if (showTypeCol) row.add(e.type == 1 ? 'Trip' : 'Load');
-          row.add(e.details);
+          if (showTypeCol) {
+            row.add(e.type == 1 ? 'Trip' : e.type == 2 ? 'Load' : 'Supply');
+          }
+          if (e.type != 3 || (isUnifiedMode && !isSingleType)) {
+            row.add(e.details);
+          }
 
           if (isType1) {
             row.addAll([
@@ -217,6 +237,14 @@ class PdfExporter {
               _currencyFormat.format(e.earnings),
               _currencyFormat.format(e.profit),
             ]);
+          } else if (isType3) {
+            row.addAll([
+              e.slipNumber ?? "-",
+              e.material ?? "-",
+              _currencyFormat.format(e.ratePerTon ?? 0),
+              (e.totalTon ?? 0).toString(),
+              _currencyFormat.format(e.earnings),
+            ]);
           } else {
             row.addAll([
               _currencyFormat.format(e.earnings),
@@ -232,9 +260,11 @@ class PdfExporter {
           if (h == 'Date' ||
               h == 'Details' ||
               h == 'Type' ||
-              h == 'Vehicle #') {
+              h == 'Vehicle #' ||
+              h == 'Slip No' ||
+              h == 'Material') {
             alignments[i] = pw.Alignment.centerLeft;
-          } else if (h == 'Tons') {
+          } else if (h == 'Tons' || h == 'CFT/TON') {
             alignments[i] = pw.Alignment.center;
           } else {
             alignments[i] = pw.Alignment.centerRight;

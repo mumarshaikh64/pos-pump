@@ -14,11 +14,16 @@ class EntryProvider with ChangeNotifier {
   }
 
   Future<void> loadEntries() async {
-    _isLoading = true;
-    notifyListeners();
-    _entries = await DBHelper().getAllEntries();
-    _isLoading = false;
-    notifyListeners();
+    try {
+      _isLoading = true;
+      notifyListeners();
+      _entries = await DBHelper().getAllEntries();
+    } catch (e) {
+      debugPrint("Error loading entries: $e");
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> addEntry(EntryModel entry) async {

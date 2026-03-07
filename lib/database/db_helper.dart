@@ -1,5 +1,8 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'package:flutter/foundation.dart';
 import '../models/entry_model.dart';
 
 class DBHelper {
@@ -16,8 +19,38 @@ class DBHelper {
   }
 
   Future<Database> _initDB() async {
-    String path = join(await getDatabasesPath(), 'pos_pump.db');
-    return await openDatabase(path, version: 1, onCreate: _createDB);
+    String databasesPath;
+    try {
+      if (kIsWeb) {
+        databasesPath = 'web_db';
+      } else if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+        final directory = await getApplicationSupportDirectory();
+        databasesPath = directory.path;
+        // Ensure directory exists
+        if (!await directory.exists()) {
+          await directory.create(recursive: true);
+        }
+      } else {
+        databasesPath = await getDatabasesPath();
+      }
+      String path = join(databasesPath, 'pos_pump.db');
+      return await openDatabase(
+        path,
+        version: 2,
+        onCreate: _createDB,
+        onUpgrade: _onUpgrade,
+      );
+    } catch (e) {
+      debugPrint("Database initialization error: $e");
+      rethrow;
+    }
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('ALTER TABLE entries ADD COLUMN slip_number TEXT');
+      await db.execute('ALTER TABLE entries ADD COLUMN material TEXT');
+    }
   }
 
   Future<void> _createDB(Database db, int version) async {
@@ -34,7 +67,9 @@ class DBHelper {
         earnings REAL NOT NULL,
         rate_per_ton REAL,
         total_ton REAL,
-        profit REAL NOT NULL
+        profit REAL NOT NULL,
+        slip_number TEXT,
+        material TEXT
       )
     ''');
   }

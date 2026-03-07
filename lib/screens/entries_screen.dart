@@ -71,7 +71,7 @@ class _EntriesScreenState extends State<EntriesScreen> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         backgroundColor: const Color(
           0xFFF1F5F9,
@@ -159,6 +159,16 @@ class _EntriesScreenState extends State<EntriesScreen> {
                           ],
                         ),
                       ),
+                      Tab(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.inventory_2_outlined, size: 20),
+                            SizedBox(width: 8),
+                            Text('Supply'),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -178,6 +188,7 @@ class _EntriesScreenState extends State<EntriesScreen> {
               children: [
                 _buildEntriesTable(provider.entries, 1, context),
                 _buildEntriesTable(provider.entries, 2, context),
+                _buildEntriesTable(provider.entries, 3, context),
               ],
             );
           },
@@ -310,6 +321,7 @@ class _EntriesScreenState extends State<EntriesScreen> {
     }
 
     final isTrip = type == 1;
+    final isSupply = type == 3;
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -354,30 +366,36 @@ class _EntriesScreenState extends State<EntriesScreen> {
               columns: [
                 const DataColumn(label: Text('DATE')),
                 const DataColumn(label: Text('VEHICLE #')),
-                const DataColumn(label: Text('DETAILS')),
-                const DataColumn(label: Text('DIESEL'), numeric: true),
+                if (isSupply) ...[
+                  const DataColumn(label: Text('SLIP NO')),
+                  const DataColumn(label: Text('MATERIAL')),
+                ],
+                if (!isSupply) ...[
+                  const DataColumn(label: Text('DETAILS')),
+                  const DataColumn(label: Text('DIESEL'), numeric: true),
+                  DataColumn(
+                    label: Text(isTrip ? 'AUTOS EXP' : 'OTHER EXP'),
+                    numeric: true,
+                  ),
+                  const DataColumn(
+                    label: Text('TOTAL EXP', style: TextStyle(color: Colors.red)),
+                    numeric: true,
+                  ),
+                ],
+                if (!isTrip)
+                  DataColumn(label: Text(isSupply ? 'RATE' : 'RATE/TON'), numeric: true),
+                if (!isTrip)
+                  DataColumn(label: Text(isSupply ? 'CFT/TON' : 'TONS'), numeric: true),
                 DataColumn(
-                  label: Text(isTrip ? 'AUTOS EXP' : 'OTHER EXP'),
+                  label: Text(isSupply ? 'AMOUNT' : 'EARNINGS', style: const TextStyle(color: Colors.teal)),
                   numeric: true,
                 ),
-                const DataColumn(
-                  label: Text('TOTAL EXP', style: TextStyle(color: Colors.red)),
-                  numeric: true,
-                ),
-                if (!isTrip)
-                  const DataColumn(label: Text('RATE/TON'), numeric: true),
-                if (!isTrip)
-                  const DataColumn(label: Text('TONS'), numeric: true),
-                const DataColumn(
-                  label: Text('EARNINGS', style: TextStyle(color: Colors.teal)),
-                  numeric: true,
-                ),
-                const DataColumn(label: Text('PROFIT')),
+                if (!isSupply) const DataColumn(label: Text('PROFIT')),
                 const DataColumn(label: Text('ACTIONS')),
               ],
               rows: List<DataRow>.generate(filtered.length, (index) {
                 final entry = filtered[index];
-                return _buildDataRow(entry, context, isTrip, index);
+                return _buildDataRow(entry, context, type, index);
               }),
             ),
           ),
@@ -389,9 +407,11 @@ class _EntriesScreenState extends State<EntriesScreen> {
   DataRow _buildDataRow(
     EntryModel entry,
     BuildContext context,
-    bool isTrip,
+    int type,
     int index,
   ) {
+    final isTrip = type == 1;
+    final isSupply = type == 3;
     final currencyFormat = NumberFormat.currency(symbol: '₹', decimalDigits: 0);
     final isStripe = index % 2 == 1;
 
@@ -424,33 +444,40 @@ class _EntriesScreenState extends State<EntriesScreen> {
             ),
           ),
         ),
-        DataCell(
-          SizedBox(
-            width: 140,
-            child: Text(
-              entry.details.isNotEmpty ? entry.details : '-',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontStyle: entry.details.isEmpty
-                    ? FontStyle.italic
-                    : FontStyle.normal,
+        if (isSupply) ...[
+          DataCell(Text(entry.slipNumber ?? '-')),
+          DataCell(Text(entry.material ?? '-')),
+        ],
+        if (!isSupply)
+          DataCell(
+            SizedBox(
+              width: 140,
+              child: Text(
+                entry.details.isNotEmpty ? entry.details : '-',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontStyle: entry.details.isEmpty
+                      ? FontStyle.italic
+                      : FontStyle.normal,
+                ),
               ),
             ),
           ),
-        ),
-        DataCell(Text(currencyFormat.format(entry.dieselExpense))),
-        DataCell(Text(currencyFormat.format(entry.otherExpense))),
-        DataCell(
-          Text(
-            currencyFormat.format(entry.totalExpense),
-            style: const TextStyle(
-              color: Colors.red,
-              fontWeight: FontWeight.bold,
+        if (!isSupply) ...[
+          DataCell(Text(currencyFormat.format(entry.dieselExpense))),
+          DataCell(Text(currencyFormat.format(entry.otherExpense))),
+          DataCell(
+            Text(
+              currencyFormat.format(entry.totalExpense),
+              style: const TextStyle(
+                color: Colors.red,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
-        ),
+        ],
         if (!isTrip)
           DataCell(
             Text(
@@ -472,27 +499,28 @@ class _EntriesScreenState extends State<EntriesScreen> {
             ),
           ),
         ),
-        DataCell(
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: entry.profit >= 0 ? Colors.green[50] : Colors.red[50],
-              borderRadius: BorderRadius.circular(6),
-              border: Border.all(
-                color: entry.profit >= 0
-                    ? Colors.green[200]!
-                    : Colors.red[200]!,
+        if (!isSupply)
+          DataCell(
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: entry.profit >= 0 ? Colors.green[50] : Colors.red[50],
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: entry.profit >= 0
+                      ? Colors.green[200]!
+                      : Colors.red[200]!,
+                ),
               ),
-            ),
-            child: Text(
-              currencyFormat.format(entry.profit),
-              style: TextStyle(
-                color: entry.profit >= 0 ? Colors.green[700] : Colors.red[700],
-                fontWeight: FontWeight.bold,
+              child: Text(
+                currencyFormat.format(entry.profit),
+                style: TextStyle(
+                  color: entry.profit >= 0 ? Colors.green[700] : Colors.red[700],
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
-        ),
         DataCell(
           Row(
             mainAxisSize: MainAxisSize.min,

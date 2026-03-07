@@ -64,7 +64,11 @@ class EntryDetailScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF1F5F9), // Light modern background
       appBar: AppBar(
-        title: Text(entry.type == 1 ? 'Trip Details' : 'Load Details'),
+        title: Text(entry.type == 1
+            ? 'Trip Details'
+            : entry.type == 2
+                ? 'Load Details'
+                : 'Supply Details'),
         actions: [
           IconButton(
             icon: const Icon(Icons.print_outlined),
@@ -122,11 +126,15 @@ class EntryDetailScreen extends StatelessWidget {
                     child: Icon(
                       entry.type == 1
                           ? Icons.local_shipping_rounded
-                          : Icons.monitor_weight_rounded,
+                          : entry.type == 2
+                              ? Icons.monitor_weight_rounded
+                              : Icons.inventory_2_rounded,
                       size: 40,
                       color: entry.type == 1
                           ? Colors.blueAccent
-                          : Colors.purpleAccent,
+                          : entry.type == 2
+                              ? Colors.purpleAccent
+                              : Colors.tealAccent,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -148,7 +156,7 @@ class EntryDetailScreen extends StatelessWidget {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  if (entry.details.isNotEmpty) ...[
+                  if (entry.details.isNotEmpty && entry.type != 3) ...[
                     const SizedBox(height: 16),
                     Container(
                       padding: const EdgeInsets.all(12),
@@ -174,6 +182,23 @@ class EntryDetailScreen extends StatelessWidget {
                       ),
                     ),
                   ],
+                  if (entry.type == 3) ...[
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildBadge(
+                          label: 'Slip: ${entry.slipNumber ?? "-"}',
+                          color: Colors.orange,
+                        ),
+                        const SizedBox(width: 8),
+                        _buildBadge(
+                          label: 'Material: ${entry.material ?? "-"}',
+                          color: Colors.blue,
+                        ),
+                      ],
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -184,7 +209,7 @@ class EntryDetailScreen extends StatelessWidget {
               children: [
                 Expanded(
                   child: _buildFinancialCard(
-                    title: 'Total Earnings',
+                    title: entry.type == 3 ? 'Total Amount' : 'Total Earnings',
                     amount: currencyFormat.format(entry.earnings),
                     icon: Icons.arrow_upward_rounded,
                     color: Colors.teal,
@@ -366,24 +391,46 @@ class EntryDetailScreen extends StatelessWidget {
             format.format(entry.otherExpense),
           ),
 
-          if (entry.type == 2) ...[
+          if (entry.type != 1) ...[
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 16),
               child: Divider(height: 1),
             ),
-            const Text(
-              'Load Metrics',
-              style: TextStyle(
+            Text(
+              entry.type == 2 ? 'Load Metrics' : 'Supply Metrics',
+              style: const TextStyle(
                 fontWeight: FontWeight.w800,
                 fontSize: 16,
                 color: Color(0xFF1E293B),
               ),
             ),
             const SizedBox(height: 16),
-            _buildRow('Total Tons/CFT', '${entry.totalTon ?? 0}'),
-            _buildRow('Rate Per Ton', format.format(entry.ratePerTon ?? 0)),
+            _buildRow(
+              entry.type == 3 ? 'Total CFT/TON' : 'Total Tons/CFT',
+              '${entry.totalTon ?? 0}',
+            ),
+            _buildRow('Rate', format.format(entry.ratePerTon ?? 0)),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _buildBadge({required String label, required Color color}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }

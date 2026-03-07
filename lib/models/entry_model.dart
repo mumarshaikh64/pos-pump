@@ -1,16 +1,18 @@
 class EntryModel {
   int? id;
-  int type; // 1 for Trip Entry, 2 for Load/Ton Report
+  int type; // 1 for Trip Entry, 2 for Load/Ton Report, 3 for Material Supply
   DateTime date;
   String details;
   String vehicleNumber;
   double dieselExpense;
-  double otherExpense; // Autos in Type 1, Other in Type 2
+  double otherExpense; // Autos in Type 1, Other in Type 2, Optional in Type 3
   double totalExpense;
-  double earnings; // Manual in Type 1, Calculated in Type 2
-  double? ratePerTon; // Required for Type 2
-  double? totalTon; // Required for Type 2
+  double earnings; // Manual in Type 1, Calculated in Type 2 & 3
+  double? ratePerTon; // Required for Type 2 & 3
+  double? totalTon; // Required for Type 2 & 3
   double profit;
+  String? slipNumber; // New for Type 3
+  String? material; // New for Type 3
 
   EntryModel({
     this.id,
@@ -25,6 +27,8 @@ class EntryModel {
     this.ratePerTon,
     this.totalTon,
     required this.profit,
+    this.slipNumber,
+    this.material,
   });
 
   Map<String, dynamic> toMap() {
@@ -41,6 +45,8 @@ class EntryModel {
       'rate_per_ton': ratePerTon,
       'total_ton': totalTon,
       'profit': profit,
+      'slip_number': slipNumber,
+      'material': material,
     };
   }
 
@@ -51,13 +57,15 @@ class EntryModel {
       date: DateTime.parse(map['date']),
       details: map['details'],
       vehicleNumber: map['vehicle_number'],
-      dieselExpense: map['diesel_expense'],
-      otherExpense: map['other_expense'],
-      totalExpense: map['total_expense'],
-      earnings: map['earnings'],
-      ratePerTon: map['rate_per_ton'],
-      totalTon: map['total_ton'],
-      profit: map['profit'],
+      dieselExpense: (map['diesel_expense'] as num).toDouble(),
+      otherExpense: (map['other_expense'] as num).toDouble(),
+      totalExpense: (map['total_expense'] as num).toDouble(),
+      earnings: (map['earnings'] as num).toDouble(),
+      ratePerTon: (map['rate_per_ton'] as num?)?.toDouble(),
+      totalTon: (map['total_ton'] as num?)?.toDouble(),
+      profit: (map['profit'] as num).toDouble(),
+      slipNumber: map['slip_number'],
+      material: map['material'],
     );
   }
 }

@@ -397,16 +397,22 @@ class DashboardScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: entry.type == 1
                             ? Colors.blue[50]
-                            : Colors.purple[50],
+                            : entry.type == 2
+                                ? Colors.purple[50]
+                                : Colors.teal[50],
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
                         entry.type == 1
                             ? Icons.local_shipping_rounded
-                            : Icons.monitor_weight_rounded,
+                            : entry.type == 2
+                                ? Icons.monitor_weight_rounded
+                                : Icons.inventory_2_rounded,
                         color: entry.type == 1
                             ? Colors.blueAccent
-                            : Colors.purpleAccent,
+                            : entry.type == 2
+                                ? Colors.purpleAccent
+                                : Colors.tealAccent,
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -458,7 +464,11 @@ class DashboardScreen extends StatelessWidget {
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
-                            entry.type == 1 ? 'Trip' : 'Load',
+                            entry.type == 1
+                                ? 'Trip'
+                                : entry.type == 2
+                                    ? 'Load'
+                                    : 'Supply',
                             style: TextStyle(
                               color: Colors.grey[600],
                               fontSize: 10,

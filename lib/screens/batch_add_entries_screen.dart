@@ -14,6 +14,8 @@ class EntryRowControllers {
   final earningsCtrl = TextEditingController();
   final rateCtrl = TextEditingController();
   final tonsCtrl = TextEditingController();
+  final slipCtrl = TextEditingController();
+  final materialCtrl = TextEditingController();
   
   // Computed values
   double get totalExpense => (double.tryParse(dieselCtrl.text) ?? 0) + (double.tryParse(otherExpCtrl.text) ?? 0);
@@ -28,6 +30,8 @@ class EntryRowControllers {
     earningsCtrl.dispose();
     rateCtrl.dispose();
     tonsCtrl.dispose();
+    slipCtrl.dispose();
+    materialCtrl.dispose();
   }
 }
 
@@ -40,7 +44,7 @@ class BatchAddEntriesScreen extends StatefulWidget {
 
 class _BatchAddEntriesScreenState extends State<BatchAddEntriesScreen> {
   final _personNameCtrl = TextEditingController();
-  int _entryType = 1; // 1 = Trip Entry, 2 = Load / Ton Report
+  int _entryType = 1; // 1 = Trip Entry, 2 = Load / Ton Report, 3 = Supply
   List<EntryRowControllers> _rows = [];
 
   @override
@@ -93,7 +97,8 @@ class _BatchAddEntriesScreenState extends State<BatchAddEntriesScreen> {
           row.dieselCtrl.text.isEmpty &&
           row.otherExpCtrl.text.isEmpty &&
           row.earningsCtrl.text.isEmpty &&
-          row.detailsCtrl.text.isEmpty) {
+          row.detailsCtrl.text.isEmpty &&
+          row.slipCtrl.text.isEmpty) {
         continue;
       }
 
@@ -134,6 +139,8 @@ class _BatchAddEntriesScreenState extends State<BatchAddEntriesScreen> {
           ratePerTon: ratePerTon,
           totalTon: totalTon,
           profit: profit,
+          slipNumber: _entryType == 3 ? row.slipCtrl.text.trim() : null,
+          material: _entryType == 3 ? row.materialCtrl.text.trim() : null,
         ),
       );
     }
@@ -287,8 +294,13 @@ class _BatchAddEntriesScreenState extends State<BatchAddEntriesScreen> {
                 ),
                 ButtonSegment(
                   value: 2,
-                  label: Text('Load/Ton Report', style: TextStyle(fontWeight: FontWeight.bold)),
+                  label: Text('Load/Ton', style: TextStyle(fontWeight: FontWeight.bold)),
                   icon: Icon(Icons.monitor_weight_outlined),
+                ),
+                ButtonSegment(
+                  value: 3,
+                  label: Text('Supply', style: TextStyle(fontWeight: FontWeight.bold)),
+                  icon: Icon(Icons.inventory_2_outlined),
                 ),
               ],
               selected: {_entryType},
@@ -348,7 +360,7 @@ class _BatchAddEntriesScreenState extends State<BatchAddEntriesScreen> {
             _headerCell('TOTAL EXP', flex: 2, isHighlight: true),
             _headerCell('EARNINGS', flex: 2),
             _headerCell('PROFIT', flex: 2, isHighlight: true),
-          ] else ...[
+          ] else if (_entryType == 2) ...[
              _headerCell('DETAILS', flex: 2),
              _headerCell('DIESEL', flex: 2),
              _headerCell('OTHER', flex: 2),
@@ -357,6 +369,12 @@ class _BatchAddEntriesScreenState extends State<BatchAddEntriesScreen> {
              _headerCell('TONS', flex: 2),
              _headerCell('EARNINGS', flex: 2, isHighlight: true),
              _headerCell('PROFIT', flex: 2, isHighlight: true),
+          ] else ...[
+             _headerCell('SLIP NO', flex: 2),
+             _headerCell('MATERIAL', flex: 2),
+             _headerCell('RATE', flex: 2),
+             _headerCell('CFT/TON', flex: 2),
+             _headerCell('AMOUNT', flex: 2, isHighlight: true),
           ],
           const SizedBox(width: 40), // Remove button space
         ],
@@ -423,7 +441,7 @@ class _BatchAddEntriesScreenState extends State<BatchAddEntriesScreen> {
             const SizedBox(width: 8),
             _computedCell(row.tripEarnings - row.totalExpense, flex: 2, 
                 color: (row.tripEarnings - row.totalExpense) >= 0 ? Colors.green[700]! : Colors.red[700]!),
-          ] else ...[
+          ] else if (_entryType == 2) ...[
             _cellField(row.detailsCtrl, flex: 2),
              const SizedBox(width: 8),
             _cellField(row.dieselCtrl, flex: 2, isNumber: true),
@@ -440,6 +458,16 @@ class _BatchAddEntriesScreenState extends State<BatchAddEntriesScreen> {
             const SizedBox(width: 8),
             _computedCell(row.calculatedEarnings - row.totalExpense, flex: 2, 
                 color: (row.calculatedEarnings - row.totalExpense) >= 0 ? Colors.green[700]! : Colors.red[700]!),
+          ] else ...[
+            _cellField(row.slipCtrl, flex: 2),
+            const SizedBox(width: 8),
+            _cellField(row.materialCtrl, flex: 2),
+            const SizedBox(width: 8),
+            _cellField(row.rateCtrl, flex: 2, isNumber: true),
+            const SizedBox(width: 8),
+            _cellField(row.tonsCtrl, flex: 2, isNumber: true),
+            const SizedBox(width: 8),
+            _computedCell(row.calculatedEarnings, flex: 2, color: Colors.teal[700]!),
           ],
           const SizedBox(width: 4),
           IconButton(

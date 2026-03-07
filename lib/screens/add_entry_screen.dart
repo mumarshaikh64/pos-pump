@@ -28,6 +28,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
   final _earningsCtrl = TextEditingController(); // Manual for Type 1
   final _ratePerTonCtrl = TextEditingController();
   final _totalTonCtrl = TextEditingController();
+  final _slipCtrl = TextEditingController();
+  final _materialCtrl = TextEditingController();
 
   // Calculated values
   double _totalExpense = 0;
@@ -48,6 +50,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
       _earningsCtrl.text = e.earnings.toString();
       _ratePerTonCtrl.text = e.ratePerTon?.toString() ?? '';
       _totalTonCtrl.text = e.totalTon?.toString() ?? '';
+      _slipCtrl.text = e.slipNumber ?? '';
+      _materialCtrl.text = e.material ?? '';
       _calculateTotals();
     }
   }
@@ -61,6 +65,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
     _earningsCtrl.dispose();
     _ratePerTonCtrl.dispose();
     _totalTonCtrl.dispose();
+    _slipCtrl.dispose();
+    _materialCtrl.dispose();
     super.dispose();
   }
 
@@ -116,11 +122,13 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
         otherExpense: double.tryParse(_otherExpenseCtrl.text) ?? 0,
         totalExpense: _totalExpense,
         earnings: _totalEarnings,
-        ratePerTon: _entryType == 2
+        ratePerTon: _entryType != 1
             ? double.tryParse(_ratePerTonCtrl.text)
             : null,
-        totalTon: _entryType == 2 ? double.tryParse(_totalTonCtrl.text) : null,
+        totalTon: _entryType != 1 ? double.tryParse(_totalTonCtrl.text) : null,
         profit: _finalProfit,
+        slipNumber: _entryType == 3 ? _slipCtrl.text.trim() : null,
+        material: _entryType == 3 ? _materialCtrl.text.trim() : null,
       );
 
       final provider = Provider.of<EntryProvider>(context, listen: false);
@@ -179,10 +187,18 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                   ButtonSegment(
                     value: 2,
                     label: Text(
-                      'Load/Ton Report',
+                      'Load/Ton',
                       style: TextStyle(fontWeight: FontWeight.bold),
                     ),
                     icon: Icon(Icons.monitor_weight_outlined),
+                  ),
+                  ButtonSegment(
+                    value: 3,
+                    label: Text(
+                      'Supply',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    icon: Icon(Icons.inventory_2_outlined),
                   ),
                 ],
                 selected: {_entryType},
@@ -254,13 +270,36 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                     icon: Icons.directions_car_outlined,
                   ),
                   const SizedBox(height: 16),
-                  _buildTextField(
-                    controller: _detailsCtrl,
-                    label: 'Details (Optional)',
-                    icon: Icons.notes,
-                    maxLines: 2,
-                    isRequired: false,
-                  ),
+                  if (_entryType == 3) ...[
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildTextField(
+                            controller: _slipCtrl,
+                            label: 'Slip Number',
+                            icon: Icons.confirmation_number_outlined,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: _buildTextField(
+                            controller: _materialCtrl,
+                            label: 'Material',
+                            icon: Icons.category_outlined,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  if (_entryType != 3)
+                    _buildTextField(
+                      controller: _detailsCtrl,
+                      label: 'Details (Optional)',
+                      icon: Icons.notes,
+                      maxLines: 2,
+                      isRequired: false,
+                    ),
                 ],
               ),
             ),
@@ -354,7 +393,7 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                         Expanded(
                           child: _buildTextField(
                             controller: _totalTonCtrl,
-                            label: 'Total Ton/CFT',
+                            label: _entryType == 3 ? 'Total CFT/TON' : 'Total Ton/CFT',
                             icon: Icons.scale_outlined,
                             isNumber: true,
                             onChanged: (_) => _calculateTotals(),
