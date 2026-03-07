@@ -14,3 +14,6 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+
+
+flutter build macos --dart-define=DRIVE_CLIENT_ID=${{ secrets.DRIVE_CLIENT_ID }} --dart-define=DRIVE_CLIENT_SECRET=${{ secrets.DRIVE_CLIENT_SECRET }}
