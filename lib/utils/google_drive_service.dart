@@ -13,19 +13,30 @@ class GoogleDriveService {
   GoogleDriveService._internal();
 
   // --- CONFIGURATION ---
-  // Ensure these are correct from your Google Cloud Console (Desktop App type)
-  static const String _clientId =
-      "YOUR_CLIENT_ID";
-  static const String _clientSecret = "YOUR_CLIENT_SECRET";
+  // Environment variables injection (Use --dart-define=DRIVE_CLIENT_ID=xxx)
+  static const String _clientId = String.fromEnvironment('DRIVE_CLIENT_ID');
+  static const String _clientSecret = String.fromEnvironment('DRIVE_CLIENT_SECRET');
 
   // Scope: driveFile (Sirf wahi files jo is app ne banayi hain)
   static final _scopes = [drive.DriveApi.driveFileScope];
 
   AutoRefreshingAuthClient? _authClient;
 
+  /// Check if keys are actually provided
+  bool _ensureKeysProvided() {
+    if (_clientId.isEmpty || _clientSecret.isEmpty) {
+      print('\n[GOOGLE DRIVE] ERROR: OAuth keys missing!');
+      print('Please run the app with:');
+      print('flutter run --dart-define=DRIVE_CLIENT_ID=xxx --dart-define=DRIVE_CLIENT_SECRET=yyy\n');
+      return false;
+    }
+    return true;
+  }
+
   /// Private helper to get or refresh the client
   Future<AutoRefreshingAuthClient?> _getAuthClient() async {
     if (_authClient != null) return _authClient;
+    if (!_ensureKeysProvided()) return null;
 
     final prefs = await SharedPreferences.getInstance();
     final savedCredentials = prefs.getString('drive_credentials');
@@ -62,6 +73,7 @@ class GoogleDriveService {
 
   /// Manually trigger Sign-In via Browser
   Future<bool> signIn() async {
+    if (!_ensureKeysProvided()) return false;
     try {
       final prefs = await SharedPreferences.getInstance();
       final clientId = ClientId(_clientId, _clientSecret);
