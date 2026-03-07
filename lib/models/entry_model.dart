@@ -13,6 +13,9 @@ class EntryModel {
   double profit;
   String? slipNumber; // New for Type 3
   String? material; // New for Type 3
+  final String? partyName;
+  final String? siteName;
+  final String? batchId;
 
   EntryModel({
     this.id,
@@ -29,6 +32,9 @@ class EntryModel {
     required this.profit,
     this.slipNumber,
     this.material,
+    this.partyName,
+    this.siteName,
+    this.batchId,
   });
 
   Map<String, dynamic> toMap() {
@@ -47,6 +53,9 @@ class EntryModel {
       'profit': profit,
       'slip_number': slipNumber,
       'material': material,
+      'party_name': partyName,
+      'site_name': siteName,
+      'batch_id': batchId,
     };
   }
 
@@ -66,6 +75,9 @@ class EntryModel {
       profit: (map['profit'] as num).toDouble(),
       slipNumber: map['slip_number'],
       material: map['material'],
+      partyName: map['party_name'],
+      siteName: map['site_name'],
+      batchId: map['batch_id'],
     );
   }
 }

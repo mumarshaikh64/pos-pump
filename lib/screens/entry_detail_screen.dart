@@ -156,6 +156,17 @@ class EntryDetailScreen extends StatelessWidget {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
+                  if (entry.partyName != null && entry.partyName!.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      'MR/MRS: ${entry.partyName}',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blueAccent,
+                      ),
+                    ),
+                  ],
                   if (entry.details.isNotEmpty && entry.type != 3) ...[
                     const SizedBox(height: 16),
                     Container(
@@ -196,6 +207,13 @@ class EntryDetailScreen extends StatelessWidget {
                           label: 'Material: ${entry.material ?? "-"}',
                           color: Colors.blue,
                         ),
+                        if (entry.siteName != null && entry.siteName!.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          _buildBadge(
+                            label: 'Site: ${entry.siteName}',
+                            color: Colors.purple,
+                          ),
+                        ],
                       ],
                     ),
                   ],

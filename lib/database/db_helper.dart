@@ -26,7 +26,6 @@ class DBHelper {
       } else if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
         final directory = await getApplicationSupportDirectory();
         databasesPath = directory.path;
-        // Ensure directory exists
         if (!await directory.exists()) {
           await directory.create(recursive: true);
         }
@@ -34,12 +33,17 @@ class DBHelper {
         databasesPath = await getDatabasesPath();
       }
       String path = join(databasesPath, 'pos_pump.db');
-      return await openDatabase(
+      final db = await openDatabase(
         path,
-        version: 2,
+        version: 4,
         onCreate: _createDB,
         onUpgrade: _onUpgrade,
       );
+
+      // Robust check: Ensure all columns exist regardless of upgrade path
+      await _ensureColumnsExist(db);
+
+      return db;
     } catch (e) {
       debugPrint("Database initialization error: $e");
       rethrow;
@@ -47,9 +51,32 @@ class DBHelper {
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 2) {
-      await db.execute('ALTER TABLE entries ADD COLUMN slip_number TEXT');
-      await db.execute('ALTER TABLE entries ADD COLUMN material TEXT');
+    // Simply use our robust column check for upgrades
+    await _ensureColumnsExist(db);
+  }
+
+  Future<void> _ensureColumnsExist(Database db) async {
+    final List<Map<String, dynamic>> columns =
+        await db.rawQuery('PRAGMA table_info(entries)');
+    final columnNames = columns.map((c) => c['name'] as String).toList();
+
+    final Map<String, String> requiredColumns = {
+      'slip_number': 'TEXT',
+      'material': 'TEXT',
+      'party_name': 'TEXT',
+      'site_name': 'TEXT',
+      'batch_id': 'TEXT',
+    };
+
+    for (var entry in requiredColumns.entries) {
+      if (!columnNames.contains(entry.key)) {
+        try {
+          await db.execute(
+              'ALTER TABLE entries ADD COLUMN ${entry.key} ${entry.value}');
+        } catch (e) {
+          debugPrint("Safe column addition (already exists or error): $e");
+        }
+      }
     }
   }
 
@@ -69,7 +96,10 @@ class DBHelper {
         total_ton REAL,
         profit REAL NOT NULL,
         slip_number TEXT,
-        material TEXT
+        material TEXT,
+        party_name TEXT,
+        site_name TEXT,
+        batch_id TEXT
       )
     ''');
   }

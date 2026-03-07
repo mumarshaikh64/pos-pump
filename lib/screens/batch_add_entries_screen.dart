@@ -44,6 +44,7 @@ class BatchAddEntriesScreen extends StatefulWidget {
 
 class _BatchAddEntriesScreenState extends State<BatchAddEntriesScreen> {
   final _personNameCtrl = TextEditingController();
+  final _siteNameCtrl = TextEditingController();
   int _entryType = 1; // 1 = Trip Entry, 2 = Load / Ton Report, 3 = Supply
   List<EntryRowControllers> _rows = [];
 
@@ -59,6 +60,7 @@ class _BatchAddEntriesScreenState extends State<BatchAddEntriesScreen> {
   @override
   void dispose() {
     _personNameCtrl.dispose();
+    _siteNameCtrl.dispose();
     for (var row in _rows) {
       row.dispose();
     }
@@ -86,9 +88,10 @@ class _BatchAddEntriesScreenState extends State<BatchAddEntriesScreen> {
     }
   }
 
-  List<EntryModel> _getValidatedEntries() {
+  List<EntryModel> _getValidatedEntries({String? batchId}) {
     final entries = <EntryModel>[];
     final personName = _personNameCtrl.text.trim();
+    final siteName = _siteNameCtrl.text.trim();
 
     for (var row in _rows) {
       final vNum = row.vehicleCtrl.text.trim();
@@ -141,14 +144,21 @@ class _BatchAddEntriesScreenState extends State<BatchAddEntriesScreen> {
           profit: profit,
           slipNumber: _entryType == 3 ? row.slipCtrl.text.trim() : null,
           material: _entryType == 3 ? row.materialCtrl.text.trim() : null,
+          partyName: personName.isNotEmpty ? personName : null,
+          siteName: _entryType == 3 && siteName.isNotEmpty ? siteName : null,
+          batchId: batchId,
         ),
       );
     }
     return entries;
   }
 
-  void _saveAll() async {
-    final entries = _getValidatedEntries();
+  void _saveAll({bool thenPrint = false}) async {
+    final String? batchId = _rows.where((r) => r.vehicleCtrl.text.isNotEmpty).length > 1 
+        ? "BATCH_${DateTime.now().millisecondsSinceEpoch}" 
+        : null;
+
+    final entries = _getValidatedEntries(batchId: batchId);
     if (entries.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No valid entries to save.')),
@@ -165,25 +175,16 @@ class _BatchAddEntriesScreenState extends State<BatchAddEntriesScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Successfully saved ${entries.length} entries!')),
       );
+      
+      if (thenPrint) {
+        String title = _personNameCtrl.text.trim().isNotEmpty 
+            ? _personNameCtrl.text.trim()
+            : "Transport Report";
+        await PdfExporter.printReportTable(entries, title);
+      }
+      
       Navigator.pop(context);
     }
-  }
-
-  void _printSheet() async {
-    final entries = _getValidatedEntries();
-    if (entries.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No valid entries to print.')),
-      );
-      return;
-    }
-
-    String title = "Sheet Print";
-    if (_personNameCtrl.text.trim().isNotEmpty) {
-      title += " - ${_personNameCtrl.text.trim()}";
-    }
-
-    await PdfExporter.printReportTable(entries, title);
   }
 
   @override
@@ -277,6 +278,25 @@ class _BatchAddEntriesScreenState extends State<BatchAddEntriesScreen> {
               ),
             ),
           ),
+          if (_entryType == 3) ...[
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 2,
+              child: TextField(
+                controller: _siteNameCtrl,
+                decoration: InputDecoration(
+                  labelText: 'Site Name',
+                  prefixIcon: const Icon(Icons.location_on_outlined),
+                  filled: true,
+                  fillColor: Colors.grey[50],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+            ),
+          ],
           const SizedBox(width: 24),
           Expanded(
             flex: 3,
@@ -313,27 +333,13 @@ class _BatchAddEntriesScreenState extends State<BatchAddEntriesScreen> {
           ),
           const SizedBox(width: 24),
           ElevatedButton.icon(
-            onPressed: _saveAll,
-            icon: const Icon(Icons.save),
-            label: const Text('Save Sheet', style: TextStyle(fontWeight: FontWeight.bold)),
+            onPressed: () => _saveAll(thenPrint: true),
+            icon: const Icon(Icons.print_rounded),
+            label: const Text('Save & Print Sheet', style: TextStyle(fontWeight: FontWeight.bold)),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              backgroundColor: const Color(0xFF1E3A8A),
+              backgroundColor: Colors.green[700],
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          OutlinedButton.icon(
-            onPressed: _printSheet,
-            icon: const Icon(Icons.print),
-            label: const Text('Print Sheet', style: TextStyle(fontWeight: FontWeight.bold)),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              foregroundColor: Colors.blueAccent,
-              side: const BorderSide(color: Colors.blueAccent),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),

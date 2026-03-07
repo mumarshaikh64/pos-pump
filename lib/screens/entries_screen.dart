@@ -368,6 +368,7 @@ class _EntriesScreenState extends State<EntriesScreen> {
                 const DataColumn(label: Text('VEHICLE #')),
                 if (isSupply) ...[
                   const DataColumn(label: Text('SLIP NO')),
+                  const DataColumn(label: Text('SITE NAME')),
                   const DataColumn(label: Text('MATERIAL')),
                 ],
                 if (!isSupply) ...[
@@ -446,6 +447,7 @@ class _EntriesScreenState extends State<EntriesScreen> {
         ),
         if (isSupply) ...[
           DataCell(Text(entry.slipNumber ?? '-')),
+          DataCell(Text(entry.siteName ?? '-')),
           DataCell(Text(entry.material ?? '-')),
         ],
         if (!isSupply)
@@ -554,6 +556,28 @@ class _EntriesScreenState extends State<EntriesScreen> {
                   PdfExporter.printEntry(entry);
                 },
               ),
+              if (entry.batchId != null)
+                IconButton(
+                  icon: const Icon(
+                    Icons.layers_outlined,
+                    color: Colors.green,
+                    size: 20,
+                  ),
+                  tooltip: 'Print Full Sheet',
+                  splashRadius: 24,
+                  onPressed: () {
+                    final provider =
+                        Provider.of<EntryProvider>(context, listen: false);
+                    final batchEntries = provider.entries
+                        .where((e) => e.batchId == entry.batchId)
+                        .toList();
+                    if (batchEntries.isNotEmpty) {
+                      String title =
+                          batchEntries.first.partyName ?? "Batch Report";
+                      PdfExporter.printReportTable(batchEntries, title);
+                    }
+                  },
+                ),
             ],
           ),
         ),

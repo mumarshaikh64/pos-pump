@@ -23,17 +23,55 @@ class PdfExporter {
             children: [
               pw.Header(
                 level: 0,
-                child: pw.Text(
-                  "Transport POS - Entry Details",
-                  style: pw.TextStyle(
-                    fontSize: 24,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      "Noman Khattak & Co",
+                      style: pw.TextStyle(
+                        fontSize: 24,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.blue900,
+                      ),
+                    ),
+                    pw.SizedBox(height: 5),
+                  ],
                 ),
               ),
               pw.SizedBox(height: 20),
+              if (entry.partyName != null && entry.partyName!.isNotEmpty) ...[
+                pw.Text(
+                  "MR/MRS: ${entry.partyName}",
+                  style: pw.TextStyle(
+                    fontSize: 16,
+                    fontWeight: pw.FontWeight.bold,
+                  ),
+                ),
+                pw.SizedBox(height: 10),
+              ],
+              pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  if (entry.siteName != null && entry.siteName!.isNotEmpty)
+                    pw.Text(
+                      "Site: ${entry.siteName}",
+                      style: pw.TextStyle(fontSize: 13, color: PdfColors.grey800, fontWeight: pw.FontWeight.bold),
+                    )
+                  else
+                    pw.SizedBox(),
+                  pw.Text(
+                    "Date: ${_dateFormat.format(entry.date)}",
+                    style: pw.TextStyle(fontSize: 13, color: PdfColors.grey800, fontWeight: pw.FontWeight.bold),
+                  ),
+                ],
+              ),
+              pw.SizedBox(height: 10),
               pw.Text(
-                "Type: ${entry.type == 1 ? 'Trip Entry' : entry.type == 2 ? 'Load Report' : 'Material Supply'}",
+                "Type: ${entry.type == 1
+                    ? 'Trip Entry'
+                    : entry.type == 2
+                    ? 'Load Report'
+                    : 'Material Supply'}",
                 style: pw.TextStyle(
                   fontSize: 18,
                   fontWeight: pw.FontWeight.bold,
@@ -148,6 +186,8 @@ class PdfExporter {
         double totalEarnings = 0;
         double totalExpenses = 0;
         double totalProfit = 0;
+        double totalTons = 0;
+        double totalRates = 0;
 
         final tableHeaders = <String>[];
         final tableData = <List<String>>[];
@@ -185,9 +225,9 @@ class PdfExporter {
           tableHeaders.addAll([
             'Diesel',
             'Other',
+            'Total Exp',
             'Rate/Ton',
             'Tons',
-            'Total Exp',
             'Earnings',
             'Profit',
           ]);
@@ -208,12 +248,20 @@ class PdfExporter {
           totalEarnings += e.earnings;
           totalExpenses += e.totalExpense;
           totalProfit += e.profit;
+          totalTons += (e.totalTon ?? 0);
+          totalRates += (e.ratePerTon ?? 0);
 
           final row = <String>[];
           row.add(_dateFormat.format(e.date));
           row.add(e.vehicleNumber);
           if (showTypeCol) {
-            row.add(e.type == 1 ? 'Trip' : e.type == 2 ? 'Load' : 'Supply');
+            row.add(
+              e.type == 1
+                  ? 'Trip'
+                  : e.type == 2
+                  ? 'Load'
+                  : 'Supply',
+            );
           }
           if (e.type != 3 || (isUnifiedMode && !isSingleType)) {
             row.add(e.details);
@@ -231,9 +279,9 @@ class PdfExporter {
             row.addAll([
               _currencyFormat.format(e.dieselExpense),
               _currencyFormat.format(e.otherExpense),
+              _currencyFormat.format(e.totalExpense),
               _currencyFormat.format(e.ratePerTon ?? 0),
               (e.totalTon ?? 0).toString(),
-              _currencyFormat.format(e.totalExpense),
               _currencyFormat.format(e.earnings),
               _currencyFormat.format(e.profit),
             ]);
@@ -277,37 +325,70 @@ class PdfExporter {
             margin: const pw.EdgeInsets.all(24),
             build: (pw.Context context) {
               return [
-                pw.Header(
-                  level: 0,
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Row(
-                        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                        children: [
-                          pw.Text(
-                            title,
-                            style: pw.TextStyle(
-                              fontSize: 18,
-                              fontWeight: pw.FontWeight.bold,
-                              color: PdfColors.blue800,
-                            ),
+                pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.center,
+                  children: [
+                    pw.Container(
+                      width: double.infinity,
+                      padding: const pw.EdgeInsets.symmetric(vertical: 10),
+                      decoration: const pw.BoxDecoration(
+                        border: pw.Border(
+                          bottom: pw.BorderSide(
+                            color: PdfColors.blue900,
+                            width: 2,
                           ),
-                          pw.Text(
-                            "Date: ${_dateFormat.format(DateTime.now())}",
-                            style: pw.TextStyle(
-                              fontSize: 10,
-                              color: PdfColors.grey700,
-                              fontWeight: pw.FontWeight.bold,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
-                    ],
-                  ),
+                      child: pw.Text(
+                        "Noman Khattak & Co",
+                        textAlign: pw.TextAlign.center,
+                        style: pw.TextStyle(
+                          fontSize: 28,
+                          fontWeight: pw.FontWeight.bold,
+                          color: PdfColors.blue900,
+                        ),
+                      ),
+                    ),
+                    pw.SizedBox(height: 10),
+                    pw.Text(
+                      title.toUpperCase(),
+                      style: pw.TextStyle(
+                        fontSize: 18,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.black,
+                      ),
+                    ),
+                    pw.SizedBox(height: 10),
+                    pw.Row(
+                      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: pw.CrossAxisAlignment.end,
+                      children: [
+                        if (entries.any((e) => e.siteName != null && e.siteName!.isNotEmpty))
+                          pw.Text(
+                            "Site: ${entries.firstWhere((e) => e.siteName != null && e.siteName!.isNotEmpty).siteName}",
+                            style: pw.TextStyle(
+                              fontSize: 14,
+                              fontWeight: pw.FontWeight.bold,
+                              color: PdfColors.grey800,
+                            ),
+                          )
+                        else
+                          pw.SizedBox(),
+                        pw.Text(
+                          "Report Date: ${_dateFormat.format(DateTime.now())}",
+                          style: pw.TextStyle(
+                            fontSize: 11,
+                            fontWeight: pw.FontWeight.bold,
+                            color: PdfColors.grey700,
+                          ),
+                        ),
+                      ],
+                    ),
+                    pw.SizedBox(height: 10),
+                  ],
                 ),
                 pw.SizedBox(height: 10),
-                if (isSingleVehicle)
+                if (isSingleVehicle && !isType2 && !isType3)
                   pw.Padding(
                     padding: const pw.EdgeInsets.only(bottom: 8),
                     child: pw.Text(
@@ -321,39 +402,40 @@ class PdfExporter {
                   ),
 
                 // Highlighted Summary Section
-                pw.Container(
-                  padding: const pw.EdgeInsets.all(12),
-                  decoration: pw.BoxDecoration(
-                    color: PdfColors.blue50,
-                    borderRadius: const pw.BorderRadius.all(
-                      pw.Radius.circular(8),
+                if (isType1 || (!isType2 && !isType3))
+                  pw.Container(
+                    padding: const pw.EdgeInsets.all(12),
+                    decoration: pw.BoxDecoration(
+                      color: PdfColors.blue50,
+                      borderRadius: const pw.BorderRadius.all(
+                        pw.Radius.circular(8),
+                      ),
+                      border: pw.Border.all(color: PdfColors.blue200),
                     ),
-                    border: pw.Border.all(color: PdfColors.blue200),
+                    child: pw.Row(
+                      mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildSummaryBox(
+                          "Total Earnings",
+                          totalEarnings,
+                          PdfColors.blue800,
+                        ),
+                        _buildSummaryBox(
+                          "Total Expenses",
+                          totalExpenses,
+                          PdfColors.red800,
+                        ),
+                        _buildSummaryBox(
+                          "Total Profit",
+                          totalProfit,
+                          totalProfit >= 0
+                              ? PdfColors.green800
+                              : PdfColors.red800,
+                        ),
+                      ],
+                    ),
                   ),
-                  child: pw.Row(
-                    mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
-                    children: [
-                      _buildSummaryBox(
-                        "Total Earnings",
-                        totalEarnings,
-                        PdfColors.blue800,
-                      ),
-                      _buildSummaryBox(
-                        "Total Expenses",
-                        totalExpenses,
-                        PdfColors.red800,
-                      ),
-                      _buildSummaryBox(
-                        "Total Profit",
-                        totalProfit,
-                        totalProfit >= 0
-                            ? PdfColors.green800
-                            : PdfColors.red800,
-                      ),
-                    ],
-                  ),
-                ),
-                pw.SizedBox(height: 16),
+                if (isType1 || (!isType2 && !isType3)) pw.SizedBox(height: 16),
 
                 // Actual Data Table
                 pw.TableHelper.fromTextArray(
@@ -379,6 +461,46 @@ class PdfExporter {
                     color: PdfColors.grey50,
                   ),
                 ),
+                if (isType2 || isType3) ...[
+                  pw.SizedBox(height: 10),
+                  pw.Container(
+                    alignment: pw.Alignment.centerRight,
+                    padding: const pw.EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    decoration: const pw.BoxDecoration(
+                      color: PdfColors.blue50,
+                      border: pw.Border(
+                        top: pw.BorderSide(color: PdfColors.blue800, width: 2),
+                      ),
+                    ),
+                    child: pw.Row(
+                      mainAxisSize: pw.MainAxisSize.min,
+                      children: [
+                        _buildFooterStat("TOTAL RATE", _currencyFormat.format(totalRates)),
+                        pw.SizedBox(width: 20),
+                        _buildFooterStat("TOTAL CFT/TON", totalTons.toString()),
+                        pw.SizedBox(width: 20),
+                        pw.Text(
+                          "TOTAL AMOUNT: ",
+                          style: pw.TextStyle(
+                            fontSize: 14,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
+                        ),
+                        pw.Text(
+                          _currencyFormat.format(totalEarnings),
+                          style: pw.TextStyle(
+                            fontSize: 16,
+                            fontWeight: pw.FontWeight.bold,
+                            color: PdfColors.blue900,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ];
             },
           ),
@@ -386,6 +508,21 @@ class PdfExporter {
         return pdf.save();
       },
       name: '${title.replaceAll(' ', '_')}.pdf',
+    );
+  }
+
+  static pw.Widget _buildFooterStat(String label, String value) {
+    return pw.Row(
+      children: [
+        pw.Text(
+          "$label: ",
+          style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold),
+        ),
+        pw.Text(
+          value,
+          style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: PdfColors.blue700),
+        ),
+      ],
     );
   }
 

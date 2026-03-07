@@ -30,6 +30,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
   final _totalTonCtrl = TextEditingController();
   final _slipCtrl = TextEditingController();
   final _materialCtrl = TextEditingController();
+  final _partyCtrl = TextEditingController();
+  final _siteCtrl = TextEditingController();
 
   // Calculated values
   double _totalExpense = 0;
@@ -52,6 +54,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
       _totalTonCtrl.text = e.totalTon?.toString() ?? '';
       _slipCtrl.text = e.slipNumber ?? '';
       _materialCtrl.text = e.material ?? '';
+      _partyCtrl.text = e.partyName ?? "";
+      _siteCtrl.text = e.siteName ?? "";
       _calculateTotals();
     }
   }
@@ -67,6 +71,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
     _totalTonCtrl.dispose();
     _slipCtrl.dispose();
     _materialCtrl.dispose();
+    _partyCtrl.dispose();
+    _siteCtrl.dispose();
     super.dispose();
   }
 
@@ -129,6 +135,8 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
         profit: _finalProfit,
         slipNumber: _entryType == 3 ? _slipCtrl.text.trim() : null,
         material: _entryType == 3 ? _materialCtrl.text.trim() : null,
+        partyName: _partyCtrl.text.isNotEmpty ? _partyCtrl.text.trim() : null,
+        siteName: _entryType == 3 ? _siteCtrl.text.trim() : null,
       );
 
       final provider = Provider.of<EntryProvider>(context, listen: false);
@@ -286,9 +294,26 @@ class _AddEntryScreenState extends State<AddEntryScreen> {
                             controller: _materialCtrl,
                             label: 'Material',
                             icon: Icons.category_outlined,
+                            isRequired: true,
                           ),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  _buildTextField(
+                    controller: _partyCtrl,
+                    label: 'Party Name',
+                    icon: Icons.person_outline,
+                    isRequired: false,
+                  ),
+                  const SizedBox(height: 16),
+                  if (_entryType == 3) ...[
+                    _buildTextField(
+                      controller: _siteCtrl,
+                      label: 'Site Name',
+                      icon: Icons.location_on_outlined,
+                      isRequired: false,
                     ),
                     const SizedBox(height: 16),
                   ],
